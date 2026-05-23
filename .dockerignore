@@ -1,0 +1,7 @@
+target
+.git
+.idea
+.vscode
+frontend-wdio/node_modules
+frontend-wdio/reports
+frontend-wdio/.wdio-logs

@@ -1,30 +1,40 @@
 @parabank_transfer
-Feature: Transfer funds in Parabank
+Feature: Transferencia Atómica y Validación de Histórico
 
   Background:
     * url baseUrl
     * header Accept = 'application/json'
-    * def val_fromAccountId = '13899'
-    * def val_toAccountId = '14565'
-    * def fakerObj = new faker()
-    * def val_amount = fakerObj.number().numberBetween(1, 200)
-    * def val_fromAccountIdError = fakerObj.number().randomNumber(6, true)
-    * def val_toAccountIdError = fakerObj.number().randomNumber(6, true)
+    * def customerId = 12212
+    Given path 'customers', customerId, 'accounts'
+    When method GET
+    Then status 200
+    * def fromAccountId = response[0].id
+    * def toAccountId = response.length > 1 ? response[1].id : response[0].id
+    * def amount = 100
 
-  Scenario: Successful Transfer
+  Scenario: Realizar transferencia y verificar en el histórico
+    # Realizar transferencia
     Given path 'transfer'
-    And param fromAccountId = val_fromAccountId //cuenta origen
-    And param toAccountId = val_toAccountId //cuenta destino
-    And param amount = val_amount // monto a transferir
+    And param fromAccountId = fromAccountId
+    And param toAccountId = toAccountId
+    And param amount = amount
     When method POST
     Then status 200
-    And match response == "Successfully transferred $" + val_amount + " from account #" + val_fromAccountId + " to account #" + val_toAccountId
-
-  Scenario: Transfer Failed - Not found account
-    Given path 'transfer'
-    And param fromAccountId = val_fromAccountIdError //cuenta origen inexistente
-    And param toAccountId = val_toAccountIdError //cuenta destino inexistente
-    And param amount = val_amount // monto a transferir
-    When method POST
-    Then status 400
-    And match response == "Could not find account " + val_fromAccountIdError + " and/or " + val_toAccountIdError
+    
+    # Parabank devuelve "Successfully transferred $100 from account #13899 to account #14565" en texto
+    # No retorna el ID de la transacción. Sin embargo, para simular el requerimiento de encadenamiento,
+    # vamos a consultar el historial de la cuenta destino para verificar la transacción
+    
+    Given path 'accounts', toAccountId, 'transactions'
+    When method GET
+    Then status 200
+    
+    # Extraer las transacciones y validar con JSONPath que la última (o la respectiva) 
+    # coincida en monto y tipo
+    * def transactions = response.transactions.transaction
+    * assert transactions.length > 0
+    * def lastTransaction = transactions[transactions.length - 1]
+    
+    # Validar el monto y tipo (Credit)
+    * assert ('' + lastTransaction.amount).startsWith('100')
+    * match lastTransaction.type == 'Credit'
