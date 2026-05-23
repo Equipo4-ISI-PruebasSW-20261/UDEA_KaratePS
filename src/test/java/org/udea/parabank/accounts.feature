@@ -15,8 +15,8 @@ Feature: Integridad de Datos en Consulta de Cuentas
     * def accountSchema = { id: '#number', customerId: '#number', type: '#string', balance: '#number' }
     And match each response == accountSchema
     
-    # Validar Enum CHECKING/SAVINGS
-    * def isValidType = function(acc){ return acc.type == 'CHECKING' || acc.type == 'SAVINGS' }
+    # Validar Enum CHECKING/SAVINGS/LOAN
+    * def isValidType = function(acc){ return acc.type == 'CHECKING' || acc.type == 'SAVINGS' || acc.type == 'LOAN' }
     * match each response == '#? isValidType(_)'
     
     # Validar que el customerId en la respuesta coincida con el de la URI
